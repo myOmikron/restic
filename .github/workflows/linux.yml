@@ -1,0 +1,49 @@
+name: Build & Tests on linux
+on:
+  push:
+    paths-ignore:
+      - "*.md"
+  pull_request:
+    paths-ignore:
+      - "*.md"
+
+jobs:
+  build_rs:
+    name: Build & Test on linux
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    env:
+      CARGO_TERM_COLOR: always
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: moonrepo/setup-rust@v1
+        with:
+          components: rustfmt
+          channel: nightly
+          bins: cargo-deny, clippy-sarif, sarif-fmt
+
+      - name: Check formatting
+        run: cargo +nightly fmt --check
+
+      - name: Build
+        run: cargo build -p restic
+
+      - name: Run cargo deny check
+        run: cargo deny check --hide-inclusion-graph
+
+      - name: Run rust-clippy
+        run: cargo clippy --workspace --message-format=json | clippy-sarif | tee rust-clippy-results.sarif | sarif-fmt
+
+      - name: Run cargo check
+        run: cargo check
+        continue-on-error: true
+
+      - name: Upload clippy analysis results to GitHub
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: rust-clippy-results.sarif
+          wait-for-processing: true
