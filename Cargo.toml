@@ -2,6 +2,7 @@
 name = "restic"
 version = "0.1.0"
 edition = "2024"
+description = "Wrapper for restic"
 authors = ["Niklas Pfister <git@omikron.dev>"]
 license = "MPL-2.0"
 
